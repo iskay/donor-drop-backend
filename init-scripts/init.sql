@@ -78,10 +78,10 @@ CREATE INDEX idx_block_number_finalized ON scraped_blocks_finalized(block_number
 -- params table (TODO: useful for the next iteration, see issue #15)
 -- CREATE TABLE IF NOT EXISTS params
 -- (
--- global_eth_cap DECIMAL DEFAULT 30,
+-- global_eth_cap DECIMAL DEFAULT 50,
 -- individual_eth_minimum DECIMAL DEFAULT 0.03,
 -- individual_eth_cap DECIMAL DEFAULT 0.3,
--- reward_nam INTEGER DEFAULT 1000000,
+-- reward_nam INTEGER DEFAULT 900000,
 -- start_date TIMESTAMPTZ NOT NULL,
 -- end_date TIMESTAMPTZ NOT NULL
 -- );
@@ -306,18 +306,18 @@ SELECT id, from_address, amount_eth,
 block_number, tx_index,
 --this is where we do the cool stuff
 CASE 
-WHEN global_total > 30.0 AND global_total - eligible_amount < 30.0
+WHEN global_total > 50.0 AND global_total - eligible_amount < 50.0
 -- previous global total = global_total less eligible_amount
-THEN 30.0 - (global_total - eligible_amount)
-WHEN global_total > 30.0 THEN 0
+THEN 50.0 - (global_total - eligible_amount)
+WHEN global_total > 50.0 THEN 0
 ELSE eligible_amount 
 END as eligible_amount,
 
 CASE 
-WHEN global_total > 30.0 AND global_total - eligible_amount < 30.0
+WHEN global_total > 50.0 AND global_total - eligible_amount < 50.0
 -- previous global total = global_total less eligible_amount
-THEN 30.0 - (global_total - eligible_amount)
-WHEN global_total > 30.0 THEN 0
+THEN 50.0 - (global_total - eligible_amount)
+WHEN global_total > 50.0 THEN 0
 ELSE amount_eth
 END as adjusted_amount_eth
 
@@ -343,26 +343,26 @@ SELECT id, from_address, amount_eth,
 block_number, tx_index, namada_key,
 --this is where we do the cool stuff
 CASE 
-WHEN global_total > 30.0 AND global_total - eligible_amount < 30.0
+WHEN global_total > 50.0 AND global_total - eligible_amount < 50.0
 -- previous global total = global_total less eligible_amount
-THEN 30.0 - (global_total - eligible_amount)
-WHEN global_total > 30.0 THEN 0
+THEN 50.0 - (global_total - eligible_amount)
+WHEN global_total > 50.0 THEN 0
 ELSE eligible_amount 
 END as eligible_amount,
 
 CASE 
-WHEN global_total > 30.0 AND global_total - eligible_amount < 30.0
+WHEN global_total > 50.0 AND global_total - eligible_amount < 50.0
 -- previous global total = global_total less eligible_amount
-THEN global_total - 30.0
-WHEN global_total < 30.0 THEN 0
+THEN global_total - 50.0
+WHEN global_total < 50.0 THEN 0
 ELSE eligible_amount 
 END as eligible_amount_above_cap,
 
 CASE 
-WHEN global_total > 30.0 AND global_total - eligible_amount < 30.0
+WHEN global_total > 50.0 AND global_total - eligible_amount < 50.0
 -- previous global total = global_total less eligible_amount
-THEN 30.0 - (global_total - eligible_amount)
-WHEN global_total > 30.0 THEN 0
+THEN 50.0 - (global_total - eligible_amount)
+WHEN global_total > 50.0 THEN 0
 ELSE amount_eth
 END as adjusted_amount_eth
 
@@ -376,7 +376,7 @@ ORDER BY 1;
 -- running view of eligible addresses from non-finalized tables
 CREATE VIEW eligible_addresses AS
 
--- query name eligible addresses (new version for topping tx capped up to 30 exactly)
+-- query name eligible addresses (new version for topping tx capped up to 50 exactly)
 
 SELECT * FROM address_totals
 WHERE eligible_amount > 0;
@@ -384,7 +384,7 @@ WHERE eligible_amount > 0;
 -- running view of eligible addresses from finalized tables. note: the private_results views provide more rich results here
 CREATE VIEW eligible_addresses_finalized AS
 
--- query name eligible addresses (new version for topping tx capped up to 30 exactly)
+-- query name eligible addresses (new version for topping tx capped up to 50 exactly)
 
 SELECT * FROM address_totals_finalized
 WHERE eligible_amount > 0;
@@ -407,13 +407,13 @@ COUNT(distinct from_address) AS eligible_addresses
 
 FROM the_full_table
 WHERE eligible_amount > 0 AND
-global_total - amount_eth < 30
+global_total - amount_eth < 50
 )
 
 SELECT
     LEAST(
         (SELECT MAX(global_total) FROM the_full_table),
-        30.0
+        50.0
     ) as eligible_total_eth,
 (SELECT total_eth_donated from temp),
 
@@ -428,7 +428,7 @@ SELECT
 FROM (
     SELECT *
     FROM the_full_table
-    WHERE global_total >= 30
+    WHERE global_total >= 50
     ORDER BY block_number, tx_index
     LIMIT 1
 ) cutoff
@@ -444,7 +444,7 @@ SELECT (SELECT MAX(global_total) FROM the_full_table) as eligible_total_eth,
 WHERE (SELECT COUNT(*) FROM
 (SELECT *
     FROM the_full_table
-    WHERE global_total >= 30
+    WHERE global_total >= 50
     ORDER BY block_number, tx_index
     LIMIT 1) cutoff1)
  < 1;
@@ -467,13 +467,13 @@ COUNT(distinct from_address) AS eligible_addresses
 
 FROM the_finalized_transactions_full_table
 WHERE eligible_amount > 0 AND 
-global_total - amount_eth < 30
+global_total - amount_eth < 50
 )
 
 SELECT
     LEAST(
         (SELECT MAX(global_total) FROM the_finalized_transactions_full_table),
-        30.0
+        50.0
     ) as eligible_total_eth,
 (SELECT total_eth_donated from temp),
 
@@ -488,7 +488,7 @@ SELECT
 FROM (
     SELECT *
     FROM the_finalized_transactions_full_table
-    WHERE global_total >= 30
+    WHERE global_total >= 50
     ORDER BY block_number, tx_index
     LIMIT 1
 ) cutoff
@@ -504,7 +504,7 @@ SELECT (SELECT MAX(global_total) FROM the_finalized_transactions_full_table) as 
 WHERE (SELECT COUNT(*) FROM
 (SELECT *
     FROM the_finalized_transactions_full_table
-    WHERE global_total >= 30
+    WHERE global_total >= 50
     ORDER BY block_number, tx_index
     LIMIT 1) cutoff1)
  < 1;
@@ -521,7 +521,7 @@ SELECT lower(transaction_hash) from donations_finalized
 --eligible addresses within drop rules as recorded in db and address totals finalized table
 CREATE VIEW private_result_eligible_addresses_finalized_in_db AS
 
--- query name suggested eligible addresses (new version for topping tx capped up to 30 exactly)
+-- query name suggested eligible addresses (new version for topping tx capped up to 50 exactly)
 WITH temp AS (
   SELECT SUM(eligible_amount) as total_eligible_eth FROM address_totals_finalized
 )
@@ -531,16 +531,16 @@ SELECT
     tnam, 
     eligible_amount,
     eligible_amount / (SELECT total_eligible_eth FROM temp) AS fraction,
-    1000000 * (eligible_amount / (SELECT total_eligible_eth FROM temp)) AS suggested_nam,
-    eligible_amount / 30.0 AS predicted_fraction,
-    1000000 * (eligible_amount / 30.0) AS predicted_suggested_nam
+    900000 * (eligible_amount / (SELECT total_eligible_eth FROM temp)) AS suggested_nam,
+    eligible_amount / 50.0 AS predicted_fraction,
+    900000 * (eligible_amount / 50.0) AS predicted_suggested_nam
 FROM address_totals_finalized
 WHERE eligible_amount > 0;
 
 --addresses in db who would otherwise have been eligible within contest rules with specified amounts if they had not been submitted after global cap was reached
 CREATE VIEW private_result_above_cap_addresses_in_db AS
 
--- query name suggested eligible addresses (new version for topping tx capped up to 30 exactly)
+-- query name suggested eligible addresses (new version for topping tx capped up to 50 exactly)
 WITH temp AS (
   SELECT SUM(eligible_above_cap) as total_eligible_above FROM address_totals_finalized
 )
@@ -549,8 +549,8 @@ SELECT
     from_address,
     tnam,
     eligible_above_cap,
-    eligible_above_cap / 30.0 AS fraction,
-    1000000 * (eligible_above_cap / 30.0) AS suggested_nam
+    eligible_above_cap / 50.0 AS fraction,
+    900000 * (eligible_above_cap / 50.0) AS suggested_nam
 FROM address_totals_finalized
 WHERE eligible_above_cap > 0;
 
@@ -573,8 +573,8 @@ WITH temp AS (
     total_eth,
     COALESCE(unaccounted_addresses.namada_key, q1.namada_key) AS tnam,
     unaccounted_addresses.sig_hash,
-    total_eth / 30 AS fraction,
-    1000000 * (total_eth / 30) AS suggested_nam
+    total_eth / 50 AS fraction,
+    900000 * (total_eth / 50) AS suggested_nam
 
    FROM (
     SELECT 
